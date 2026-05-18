@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, NavLink, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { useState, CSSProperties } from "react";
 import { HomePage } from "./pages/HomePage";
 import { CreateEscrowPage } from "./pages/CreateEscrowPage";

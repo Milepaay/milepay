@@ -2,6 +2,8 @@ import { useState, useCallback } from "react";
 import { getEscrow, releaseMilestone, disputeEscrow, refundEscrow } from "../lib/contract";
 import type { Escrow } from "../types";
 
+type Signer = { publicKey: () => string; sign: (msg: Uint8Array) => Uint8Array };
+
 export function useEscrow(escrowId: number) {
   const [escrow, setEscrow] = useState<Escrow | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,7 +23,7 @@ export function useEscrow(escrowId: number) {
   }, [escrowId]);
 
   const release = useCallback(
-    async (signer: Parameters<typeof releaseMilestone>[0], milestoneId: number) => {
+    async (signer: Signer, milestoneId: number) => {
       await releaseMilestone(signer, escrowId, milestoneId);
       await refresh();
     },
@@ -29,7 +31,7 @@ export function useEscrow(escrowId: number) {
   );
 
   const dispute = useCallback(
-    async (signer: Parameters<typeof disputeEscrow>[0]) => {
+    async (signer: Signer) => {
       await disputeEscrow(signer, escrowId);
       await refresh();
     },
@@ -37,7 +39,7 @@ export function useEscrow(escrowId: number) {
   );
 
   const refund = useCallback(
-    async (signer: Parameters<typeof refundEscrow>[0]) => {
+    async (signer: Signer) => {
       await refundEscrow(signer, escrowId);
       await refresh();
     },

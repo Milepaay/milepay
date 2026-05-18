@@ -2,7 +2,6 @@ import {
   StellarWalletsKit,
   WalletNetwork,
   FREIGHTER_ID,
-  LOBSTR_ID,
   allowAllModules,
 } from "@creit.tech/stellar-wallets-kit";
 import { NETWORK_PASSPHRASE } from "./constants";
@@ -15,7 +14,7 @@ export const walletsKit = new StellarWalletsKit({
 
 export async function connectWallet(): Promise<string> {
   await walletsKit.openModal({
-    onWalletSelected: async (option) => {
+    onWalletSelected: async (option: { id: string }) => {
       walletsKit.setWallet(option.id);
     },
   });

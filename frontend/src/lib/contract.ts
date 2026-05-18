@@ -2,7 +2,6 @@ import {
   Contract,
   SorobanRpc,
   TransactionBuilder,
-  Networks,
   BASE_FEE,
   xdr,
   nativeToScVal,
@@ -16,7 +15,7 @@ const server = new SorobanRpc.Server(RPC_URL);
 const contract = new Contract(CONTRACT_ID);
 
 async function invokeContract(
-  sourceKeypair: { publicKey: () => string; sign: (msg: Buffer) => Buffer },
+  sourceKeypair: { publicKey: () => string; sign: (msg: Uint8Array) => Uint8Array },
   method: string,
   args: xdr.ScVal[]
 ) {
@@ -50,8 +49,10 @@ async function invokeContract(
   throw new Error("Transaction failed");
 }
 
+type Signer = Parameters<typeof invokeContract>[0];
+
 export async function createEscrow(
-  signer: Parameters<typeof invokeContract>[0],
+  signer: Signer,
   params: CreateEscrowParams & { clientAddress: string }
 ): Promise<number> {
   const amounts = params.milestones.map((m) =>
@@ -73,7 +74,7 @@ export async function createEscrow(
 }
 
 export async function releaseMilestone(
-  signer: Parameters<typeof invokeContract>[0],
+  signer: Signer,
   escrowId: number,
   milestoneId: number
 ): Promise<void> {
@@ -84,7 +85,7 @@ export async function releaseMilestone(
 }
 
 export async function disputeEscrow(
-  signer: Parameters<typeof invokeContract>[0],
+  signer: Signer,
   escrowId: number
 ): Promise<void> {
   await invokeContract(signer, "dispute", [
@@ -93,7 +94,7 @@ export async function disputeEscrow(
 }
 
 export async function refundEscrow(
-  signer: Parameters<typeof invokeContract>[0],
+  signer: Signer,
   escrowId: number
 ): Promise<void> {
   await invokeContract(signer, "refund", [
