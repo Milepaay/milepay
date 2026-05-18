@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="MilePay — Milestone-based escrow for freelancers on Stellar. Client funds lock on-chain. Payment releases per milestone." />
+  <title>MilePay — Get paid. Not promises.</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Tokens ── */
+    :root {
+      --bg:           #06091a;
+      --bg-card:      #0d1326;
+      --bg-card2:     #0f1830;
+      --border:       rgba(99,102,241,0.13);
+      --border-h:     rgba(99,102,241,0.36);
+      --text:         #e8edf8;
+      --text-2:       #8392b8;
+      --text-3:       #3a4a6a;
+      --accent:       #6366f1;
+      --accent-h:     #818cf8;
+      --accent-dim:   rgba(99,102,241,0.10);
+      --stellar:      #38bdf8;
+      --stellar-dim:  rgba(56,189,248,0.07);
+      --green:        #10b981;
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+
+    /* Animated dot grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(99,102,241,0.17) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: radial-gradient(ellipse 110% 55% at 50% 0%, black 0%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+      animation: grid-breathe 9s ease-in-out infinite;
+    }
+
+    /* Top ambient glow */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -15%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1100px;
+      height: 600px;
+      background: radial-gradient(ellipse, rgba(99,102,241,0.065) 0%, rgba(56,189,248,0.025) 45%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 32px;
+      position: relative;
+      z-index: 1;
+    }
+
+    section { position: relative; z-index: 1; }
+    a { text-decoration: none; color: inherit; }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 26px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      transition: background 0.18s, box-shadow 0.18s, transform 0.18s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-h);
+      box-shadow: 0 0 32px rgba(99,102,241,0.38);
+      transform: translateY(-1px);
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 22px;
+      background: transparent;
+      color: var(--text-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      transition: border-color 0.18s, color 0.18s, background 0.18s;
+      cursor: pointer;
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--border-h);
+      color: var(--text);
+      background: var(--accent-dim);
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    nav.scrolled {
+      background: rgba(6,9,26,0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    nav .container { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: -0.3px;
+    }
+
+    .logo-mark {
+      width: 32px; height: 32px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #6366f1 0%, #38bdf8 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; color: #fff;
+      flex-shrink: 0;
+    }
+
+    .logo-dot { color: var(--accent); }
+
+    /* ── Hero ── */
+    .hero { padding: 148px 0 110px; }
+
+    .hero-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 72px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      border: 1px solid rgba(56,189,248,0.3);
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--stellar);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+      background: rgba(56,189,248,0.05);
+      animation: fadeUp 0.55s cubic-bezier(0.22,1,0.36,1) 0.05s both;
+    }
+
+    .eyebrow-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--stellar);
+      box-shadow: 0 0 8px var(--stellar);
+      animation: pulse-dot 2.2s ease-in-out infinite;
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(52px, 6vw, 84px);
+      font-weight: 800;
+      line-height: 1.02;
+      letter-spacing: -0.035em;
+      color: var(--text);
+      margin-bottom: 24px;
+      animation: fadeUp 0.55s cubic-bezier(0.22,1,0.36,1) 0.12s both;
+    }
+
+    /* Animated strikethrough on "promises" */
+    .strike-wrap {
+      position: relative;
+      display: inline-block;
+      color: var(--text-2);
+    }
+
+    .strike-wrap::after {
+      content: '';
+      position: absolute;
+      left: -2px; right: -2px;
+      top: 53%;
+      height: 5px;
+      background: linear-gradient(90deg, var(--accent), var(--stellar));
+      border-radius: 2px;
+      transform: scaleX(0);
+      transform-origin: left;
+      animation: strikethrough 0.45s cubic-bezier(0.22,1,0.36,1) 1.6s forwards;
+    }
+
+    .hero-sub {
+      font-size: 18px;
+      color: var(--text-2);
+      line-height: 1.72;
+      max-width: 440px;
+      margin-bottom: 40px;
+      animation: fadeUp 0.55s cubic-bezier(0.22,1,0.36,1) 0.22s both;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      animation: fadeUp 0.55s cubic-bezier(0.22,1,0.36,1) 0.32s both;
+    }
+
+    /* ── Escrow card (hero visual) ── */
+    .hero-visual {
+      animation: fadeUp 0.65s cubic-bezier(0.22,1,0.36,1) 0.18s both;
+    }
+
+    .escrow-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 32px 96px rgba(0,0,0,0.55), 0 0 0 1px rgba(99,102,241,0.06);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .escrow-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(99,102,241,0.5), rgba(56,189,248,0.4), transparent);
+    }
+
+    .escrow-card-glow {
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.05) 0%, transparent 55%);
+      pointer-events: none;
+    }
+
+    .escrow-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .escrow-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-3);
+      letter-spacing: 0.05em;
+    }
+
+    .badge-active {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 11px;
+      background: rgba(16,185,129,0.09);
+      border: 1px solid rgba(16,185,129,0.22);
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--green);
+      letter-spacing: 0.03em;
+    }
+
+    .badge-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    .escrow-amount {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 44px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .escrow-token {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-3);
+      margin-bottom: 24px;
+    }
+
+    /* Flow */
+    .flow {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 0;
+    }
+
+    .flow-party {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    .flow-avatar {
+      width: 42px; height: 42px;
+      border-radius: 11px;
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+
+    .flow-lbl {
+      font-size: 10px;
+      color: var(--text-3);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .flow-line {
+      flex: 1;
+      height: 2px;
+      position: relative;
+      margin-bottom: 22px;
+      overflow: hidden;
+    }
+
+    .flow-line-dash {
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(90deg, var(--border-h) 0, var(--border-h) 7px, transparent 7px, transparent 14px);
+    }
+
+    .flow-line-fill {
+      position: absolute;
+      top: 0; left: 0;
+      height: 100%; width: 0;
+      background: linear-gradient(90deg, var(--accent), var(--stellar));
+      animation: fill-line 2.4s cubic-bezier(0.4,0,0.2,1) 0.8s forwards;
+    }
+
+    .flow-line-fill-2 {
+      animation-delay: 1.8s;
+    }
+
+    .flow-lock {
+      flex-shrink: 0;
+      width: 48px; height: 48px;
+      border-radius: 13px;
+      background: var(--accent-dim);
+      border: 1px solid var(--border-h);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 22px;
+    }
+
+    .flow-lock svg { width: 20px; height: 20px; color: var(--accent-h); }
+
+    /* Milestones */
+    .milestones { display: flex; flex-direction: column; gap: 8px; }
+
+    .ms-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 13px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.015);
+      transition: border-color 0.2s;
+    }
+
+    .ms-row.done {
+      border-color: rgba(16,185,129,0.28);
+      background: rgba(16,185,129,0.035);
+    }
+
+    .ms-left { display: flex; align-items: center; gap: 10px; }
+
+    .ms-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--text-3);
+      flex-shrink: 0;
+    }
+
+    .ms-dot.done { background: var(--green); box-shadow: 0 0 7px var(--green); }
+
+    .ms-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-2);
+    }
+
+    .ms-row.done .ms-name { color: var(--text); }
+
+    .ms-right { display: flex; align-items: center; gap: 8px; }
+
+    .ms-amt {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-3);
+    }
+
+    .ms-row.done .ms-amt { color: var(--green); }
+
+    .ms-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .ms-badge.released { background: rgba(16,185,129,0.12); color: var(--green); }
+    .ms-badge.pending  { background: rgba(255,255,255,0.04); color: var(--text-3); }
+
+    /* ── Section shared ── */
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .section-label::before {
+      content: '';
+      display: block;
+      width: 20px; height: 1px;
+      background: var(--accent);
+    }
+
+    .section-heading {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(30px, 3.2vw, 46px);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.025em;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+
+    .section-sub {
+      font-size: 17px;
+      color: var(--text-2);
+      line-height: 1.7;
+      max-width: 520px;
+    }
+
+    /* Scroll reveal */
+    .reveal {
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity 0.65s cubic-bezier(0.22,1,0.36,1), transform 0.65s cubic-bezier(0.22,1,0.36,1);
+    }
+
+    .reveal.visible { opacity: 1; transform: none; }
+
+    .d1 { transition-delay: 0.07s; }
+    .d2 { transition-delay: 0.15s; }
+    .d3 { transition-delay: 0.23s; }
+    .d4 { transition-delay: 0.31s; }
+
+    /* ── How it works ── */
+    .how-section { padding: 96px 0; }
+
+    .how-header { text-align: center; margin-bottom: 72px; }
+    .how-header .section-label { justify-content: center; }
+    .how-header .section-label::before { display: none; }
+    .how-header .section-sub { margin: 0 auto; }
+
+    .steps {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      position: relative;
+    }
+
+    .steps::before {
+      content: '';
+      position: absolute;
+      top: 31px;
+      left: calc(16.66% + 20px);
+      right: calc(16.66% + 20px);
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-h) 20%, var(--border-h) 80%, transparent);
+    }
+
+    .step { padding: 0 28px; text-align: center; }
+    .step:first-child { padding-left: 0; }
+    .step:last-child  { padding-right: 0; }
+
+    .step-num {
+      width: 62px; height: 62px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-h);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--accent-h);
+      margin: 0 auto 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+
+    .step-desc { font-size: 14px; color: var(--text-2); line-height: 1.7; }
+
+    /* ── Features ── */
+    .features-section { padding: 20px 0 96px; }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 52px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 30px;
+      transition: border-color 0.22s, transform 0.22s, box-shadow 0.22s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--border-h);
+      transform: translateY(-3px);
+      box-shadow: 0 20px 56px rgba(0,0,0,0.35), 0 0 0 1px var(--border-h);
+    }
+
+    .feature-icon {
+      width: 46px; height: 46px;
+      border-radius: 12px;
+      background: var(--accent-dim);
+      border: 1px solid var(--border-h);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 18px;
+    }
+
+    .feature-icon svg { width: 21px; height: 21px; color: var(--accent-h); }
+
+    .feature-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 9px;
+      letter-spacing: -0.01em;
+    }
+
+    .feature-desc { font-size: 14px; color: var(--text-2); line-height: 1.72; }
+
+    /* ── Stellar ── */
+    .stellar-section { padding: 0 0 80px; }
+
+    .stellar-inner {
+      background: linear-gradient(135deg, rgba(11,17,35,0.95) 0%, rgba(13,21,44,0.95) 100%);
+      border: 1px solid rgba(56,189,248,0.14);
+      border-radius: 22px;
+      padding: 56px 52px;
+      display: flex;
+      align-items: center;
+      gap: 72px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stellar-inner::before {
+      content: '';
+      position: absolute;
+      top: -60%; right: -5%;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(56,189,248,0.045) 0%, transparent 55%);
+      pointer-events: none;
+    }
+
+    .stellar-left { flex-shrink: 0; }
+
+    .stellar-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--stellar);
+      margin-bottom: 10px;
+      opacity: 0.8;
+    }
+
+    .stellar-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: var(--text);
+      line-height: 1.1;
+    }
+
+    .stellar-divider {
+      width: 1px;
+      height: 72px;
+      background: rgba(56,189,248,0.15);
+      flex-shrink: 0;
+    }
+
+    .stellar-stats {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 40px;
+    }
+
+    .stat { text-align: center; }
+
+    .stat-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 34px;
+      font-weight: 500;
+      color: var(--stellar);
+      letter-spacing: -0.02em;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .stat-lbl { font-size: 13px; color: var(--text-2); }
+
+    /* ── CTA ── */
+    .cta-section { padding: 20px 0 120px; }
+
+    .cta-inner {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 76px 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-inner::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 5%, var(--accent) 40%, var(--stellar) 60%, transparent 95%);
+    }
+
+    .cta-inner::after {
+      content: '';
+      position: absolute;
+      top: -30%; left: 50%;
+      transform: translateX(-50%);
+      width: 700px; height: 400px;
+      background: radial-gradient(ellipse, rgba(99,102,241,0.07) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .cta-heading {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(28px, 3.5vw, 44px);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: var(--text);
+      margin-bottom: 14px;
+      position: relative; z-index: 1;
+    }
+
+    .cta-sub {
+      font-size: 17px;
+      color: var(--text-2);
+      margin-bottom: 38px;
+      position: relative; z-index: 1;
+    }
+
+    .cta-btns {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      position: relative; z-index: 1;
+    }
+
+    .cta-btns .btn-primary { font-size: 16px; padding: 15px 30px; }
+    .cta-btns .btn-ghost   { font-size: 16px; padding: 15px 24px; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 0;
+      position: relative; z-index: 1;
+    }
+
+    footer .container { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+
+    .footer-links { display: flex; align-items: center; gap: 24px; }
+
+    .footer-links a {
+      font-size: 13px;
+      color: var(--text-3);
+      transition: color 0.18s;
+    }
+
+    .footer-links a:hover { color: var(--text-2); }
+
+    .built-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-3);
+    }
+
+    .built-badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--stellar);
+      opacity: 0.55;
+    }
+
+    /* ── Keyframes ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes strikethrough {
+      to { transform: scaleX(1); }
+    }
+
+    @keyframes grid-breathe {
+      0%, 100% { opacity: 0.5; }
+      50%       { opacity: 0.95; }
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.35; }
+    }
+
+    @keyframes fill-line {
+      to { width: 100%; }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 960px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 52px; }
+      .hero-visual { order: -1; }
+      .escrow-card { max-width: 480px; margin: 0 auto; }
+
+      .steps { grid-template-columns: 1fr; gap: 44px; }
+      .steps::before { display: none; }
+      .step { padding: 0; display: flex; gap: 20px; align-items: flex-start; text-align: left; }
+      .step-num { margin: 0; flex-shrink: 0; }
+
+      .features-grid { grid-template-columns: 1fr; }
+
+      .stellar-inner { flex-direction: column; gap: 36px; padding: 40px 32px; }
+      .stellar-divider { width: 80px; height: 1px; }
+      .stellar-stats { grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+      .stellar-left { text-align: center; }
+    }
+
+    @media (max-width: 640px) {
+      .container { padding: 0 20px; }
+      .cta-inner { padding: 52px 24px; }
+      .stellar-stats { grid-template-columns: 1fr; }
+      .hero-actions { flex-direction: column; align-items: flex-start; }
+      h1 { font-size: 46px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ────────────────────────────────────────── -->
+<nav id="nav">
+  <div class="container">
+    <a href="/" class="logo">
+      <div class="logo-mark">M</div>
+      Mile<span class="logo-dot">Pay</span>
+    </a>
+    <a href="#" class="btn-primary" style="font-size:14px; padding:9px 20px;">
+      Launch App
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M2 10L10 2M10 2H5M10 2v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+  </div>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────── -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-inner">
+
+      <!-- Left: copy -->
+      <div class="hero-content">
+        <div class="eyebrow">
+          <span class="eyebrow-dot"></span>
+          Open Source · Built on Stellar
+        </div>
+        <h1>
+          Get paid.<br>
+          Not <span class="strike-wrap">promises.</span>
+        </h1>
+        <p class="hero-sub">
+          MilePay locks client funds on-chain before work begins. Each milestone you complete unlocks payment — instantly, no middleman, no chasing invoices.
+        </p>
+        <div class="hero-actions">
+          <a href="#" class="btn-primary">
+            Get Started
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <a href="https://github.com/Milepaay/milepay" target="_blank" rel="noopener" class="btn-ghost">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+            </svg>
+            View on GitHub
+          </a>
+        </div>
+      </div>
+
+      <!-- Right: live escrow card -->
+      <div class="hero-visual">
+        <div class="escrow-card">
+          <div class="escrow-card-glow"></div>
+
+          <div class="escrow-header">
+            <span class="escrow-id">ESCROW #0042</span>
+            <span class="badge-active">
+              <span class="badge-dot"></span>
+              Active
+            </span>
+          </div>
+
+          <div class="escrow-amount">5,000</div>
+          <div class="escrow-token">USDC · Stellar Testnet</div>
+
+          <!-- Client → [Lock] → Freelancer flow -->
+          <div class="flow">
+            <div class="flow-party">
+              <div class="flow-avatar">🏢</div>
+              <span class="flow-lbl">Client</span>
+            </div>
+            <div class="flow-line">
+              <div class="flow-line-dash"></div>
+              <div class="flow-line-fill"></div>
+            </div>
+            <div class="flow-lock">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="11" width="14" height="10" rx="2"/>
+                <path d="M8 11V7a4 4 0 018 0v4"/>
+              </svg>
+            </div>
+            <div class="flow-line">
+              <div class="flow-line-dash"></div>
+              <div class="flow-line-fill flow-line-fill-2"></div>
+            </div>
+            <div class="flow-party">
+              <div class="flow-avatar">👩‍💻</div>
+              <span class="flow-lbl">Freelancer</span>
+            </div>
+          </div>
+
+          <!-- Milestones -->
+          <div class="milestones">
+            <div class="ms-row done">
+              <div class="ms-left">
+                <div class="ms-dot done"></div>
+                <span class="ms-name">Design mockups</span>
+              </div>
+              <div class="ms-right">
+                <span class="ms-amt">+1,500</span>
+                <span class="ms-badge released">Released</span>
+              </div>
+            </div>
+            <div class="ms-row">
+              <div class="ms-left">
+                <div class="ms-dot"></div>
+                <span class="ms-name">Frontend build</span>
+              </div>
+              <div class="ms-right">
+                <span class="ms-amt">2,000</span>
+                <span class="ms-badge pending">Pending</span>
+              </div>
+            </div>
+            <div class="ms-row">
+              <div class="ms-left">
+                <div class="ms-dot"></div>
+                <span class="ms-name">Final delivery</span>
+              </div>
+              <div class="ms-right">
+                <span class="ms-amt">1,500</span>
+                <span class="ms-badge pending">Pending</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── How it works ───────────────────────────────── -->
+<section class="how-section">
+  <div class="container">
+    <div class="how-header reveal">
+      <div class="section-label">Process</div>
+      <h2 class="section-heading">Three steps to protected work</h2>
+      <p class="section-sub">No lawyers. No disputes over "did you deliver?" The contract is the code.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step reveal d1">
+        <div class="step-num">01</div>
+        <div>
+          <div class="step-title">Client deposits funds</div>
+          <p class="step-desc">Client creates an escrow, defines milestones, and deposits the full amount in USDC. Funds are locked in a Soroban smart contract on Stellar — untouchable until milestones are approved.</p>
+        </div>
+      </div>
+      <div class="step reveal d2">
+        <div class="step-num">02</div>
+        <div>
+          <div class="step-title">Freelancer delivers</div>
+          <p class="step-desc">Work is done milestone by milestone. The freelancer delivers each piece, knowing payment is already secured — no risk of non-payment, no awkward invoice follow-ups.</p>
+        </div>
+      </div>
+      <div class="step reveal d3">
+        <div class="step-num">03</div>
+        <div>
+          <div class="step-title">Payment releases instantly</div>
+          <p class="step-desc">Client approves the milestone — funds transfer to the freelancer's Stellar wallet in under 5 seconds. No bank, no wire transfer, no waiting 30 days.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ───────────────────────────────────── -->
+<section class="features-section">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">Features</div>
+      <h2 class="section-heading">Built for real freelance work</h2>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card reveal d1">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="11" width="14" height="10" rx="2"/>
+            <path d="M8 11V7a4 4 0 018 0v4"/>
+          </svg>
+        </div>
+        <div class="feature-title">On-chain escrow</div>
+        <p class="feature-desc">Funds sit in a Soroban smart contract — not a company's bank account. Immutable, auditable, trustless. No one can run with the money.</p>
+      </div>
+      <div class="feature-card reveal d2">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 12l2 2 4-4"/>
+            <circle cx="12" cy="12" r="9"/>
+          </svg>
+        </div>
+        <div class="feature-title">Milestone-based release</div>
+        <p class="feature-desc">Break any project into milestones with individual amounts. Client approves each one independently — no bulk transfers, no disputes over partial work.</p>
+      </div>
+      <div class="feature-card reveal d3">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <div class="feature-title">On-chain dispute resolution</div>
+        <p class="feature-desc">If things go sideways, either party can raise a dispute. A neutral arbitrator resolves it on-chain — no chargebacks, no power imbalance, no ghosting.</p>
+      </div>
+      <div class="feature-card reveal d4">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+        </div>
+        <div class="feature-title">Near-zero fees</div>
+        <p class="feature-desc">Stellar transactions cost fractions of a cent. A $5,000 escrow doesn't lose $150 to the network. Built for real money, real freelancers, real margins.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Built on Stellar ───────────────────────────── -->
+<section class="stellar-section">
+  <div class="container">
+    <div class="stellar-inner reveal">
+      <div class="stellar-left">
+        <div class="stellar-eyebrow">Powered by</div>
+        <div class="stellar-name">Stellar<br>Network</div>
+      </div>
+      <div class="stellar-divider"></div>
+      <div class="stellar-stats">
+        <div class="stat">
+          <div class="stat-val">5s</div>
+          <div class="stat-lbl">Transaction finality</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">$0.00001</div>
+          <div class="stat-lbl">Average tx fee</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">USDC</div>
+          <div class="stat-lbl">Native stablecoin support</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ────────────────────────────────────────── -->
+<section class="cta-section">
+  <div class="container">
+    <div class="cta-inner reveal">
+      <h2 class="cta-heading">Start your first escrow</h2>
+      <p class="cta-sub">Free to use. Open source. No account required — just a Stellar wallet.</p>
+      <div class="cta-btns">
+        <a href="#" class="btn-primary">
+          Connect Wallet
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+            <path d="M3 7.5h9M7.5 3l4.5 4.5-4.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <a href="https://github.com/Milepaay/milepay" target="_blank" rel="noopener" class="btn-ghost">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+          View Source
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────── -->
+<footer>
+  <div class="container">
+    <a href="/" class="logo" style="font-size:16px;">
+      <div class="logo-mark" style="width:28px;height:28px;font-size:12px;">M</div>
+      Mile<span class="logo-dot">Pay</span>
+    </a>
+    <div class="footer-links">
+      <a href="https://github.com/Milepaay/milepay" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/Milepaay/milepay/issues" target="_blank" rel="noopener">Issues</a>
+      <span class="built-badge">
+        <span class="built-badge-dot"></span>
+        Built on Stellar
+      </span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Sticky nav background on scroll
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 24);
+  }, { passive: true });
+
+  // Scroll-triggered reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
